@@ -67,9 +67,16 @@ export const createCategory = async (
   try {
     const { name, description } = req.body;
 
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({
+        message: 'Category name is required',
+      });
+      return;
+    }
+
     const category = await Category.create({
-      name,
-      description,
+      name: name.trim(),
+      description: description || '',
     });
 
     res.status(201).json(category);
@@ -98,12 +105,21 @@ export const updateCategory = async (
       return;
     }
 
+    // Validate name if provided
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+      res.status(400).json({
+        message: 'Category name must be a non-empty string',
+      });
+      return;
+    }
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description;
+
     const category = await Category.findByIdAndUpdate(
       id,
-      {
-        name,
-        description,
-      },
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -148,21 +164,25 @@ export const deleteCategory = async (
     });
 
     if (productsUsingCategory > 0) {
+      console.log(`[MongoDB] DELETE /api/categories/${id} -> Cannot delete (${productsUsingCategory} products found)`);
       res.status(409).json({
         message: 'Cannot delete category because it has products',
       });
       return;
     }
 
+    console.log(`[MongoDB] DELETE /api/categories/${id} -> Operation: findByIdAndDelete("${id}")`);
     const category = await Category.findByIdAndDelete(id);
 
     if (!category) {
+      console.log(`[MongoDB] ✗ Category not found for deletion`);
       res.status(404).json({
         message: 'Category not found',
       });
       return;
     }
 
+    console.log(`[MongoDB] ✓ Category deleted`);
     res.status(200).json({
       message: 'Category deleted successfully',
       category,

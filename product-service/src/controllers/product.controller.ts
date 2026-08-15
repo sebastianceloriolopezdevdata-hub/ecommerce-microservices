@@ -76,6 +76,28 @@ export const createProduct = async (
       attributes,
     } = req.body;
 
+    // Validate required fields
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({
+        message: 'Product name is required',
+      });
+      return;
+    }
+
+    if (typeof price !== 'number' || price <= 0) {
+      res.status(400).json({
+        message: 'Product price is required and must be greater than 0',
+      });
+      return;
+    }
+
+    if (typeof stock !== 'number' || stock < 0) {
+      res.status(400).json({
+        message: 'Product stock is required and must be >= 0',
+      });
+      return;
+    }
+
     // Validate categoryId
     if (
       typeof categoryId !== 'string' ||
@@ -98,11 +120,11 @@ export const createProduct = async (
     }
 
     const product = await Product.create({
-      name,
+      name: name.trim(),
       price,
       stock,
       categoryId,
-      attributes,
+      attributes: attributes || {},
     });
 
     const productWithCategory = await product.populate('categoryId');
@@ -163,6 +185,7 @@ export const updateProduct = async (
       }
     }
 
+    console.log(`[MongoDB] PUT /api/products/${id} -> Operation: findByIdAndUpdate("${id}", {...})`);
     const product = await Product.findByIdAndUpdate(
       id,
       {
@@ -179,12 +202,14 @@ export const updateProduct = async (
     ).populate('categoryId');
 
     if (!product) {
+      console.log(`[MongoDB] ✗ Product not found for update`);
       res.status(404).json({
         message: 'Product not found',
       });
       return;
     }
 
+    console.log(`[MongoDB] ✓ Product updated`);
     res.status(200).json(product);
   } catch (error) {
     console.error(error);
@@ -224,6 +249,7 @@ export const updateProductStock = async (
       return;
     }
 
+    console.log(`[MongoDB] PATCH /api/products/${id}/stock -> Operation: findByIdAndUpdate("${id}", {stock: ${stock}})`)
     const product = await Product.findByIdAndUpdate(
       id,
       {
@@ -236,12 +262,14 @@ export const updateProductStock = async (
     ).populate('categoryId');
 
     if (!product) {
+      console.log(`[MongoDB] ✗ Product not found for stock update`);
       res.status(404).json({
         message: 'Product not found',
       });
       return;
     }
 
+    console.log(`[MongoDB] ✓ Product stock updated to ${stock}`);
     res.status(200).json(product);
   } catch (error) {
     console.error(error);
@@ -268,15 +296,18 @@ export const deleteProduct = async (
       return;
     }
 
+    console.log(`[MongoDB] DELETE /api/products/${id} -> Operation: findByIdAndDelete("${id}")`);
     const product = await Product.findByIdAndDelete(id);
 
     if (!product) {
+      console.log(`[MongoDB] ✗ Product not found for deletion`);
       res.status(404).json({
         message: 'Product not found',
       });
       return;
     }
 
+    console.log(`[MongoDB] ✓ Product deleted`);
     res.status(200).json({
       message: 'Product deleted successfully',
       product,

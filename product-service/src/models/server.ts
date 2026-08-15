@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 
 import { connectMongoDB } from '../database/mongoConnection';
 
@@ -42,6 +43,7 @@ class Server {
 
   middlewares(): void {
     this.app.use(cors());
+    this.app.use(morgan('dev'));
     this.app.use(express.json());
   }
 
